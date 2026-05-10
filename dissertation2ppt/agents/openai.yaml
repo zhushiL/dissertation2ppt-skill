@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dissertation to Defense PPT"
+  short_description: "Create editable Chinese defense PPTX decks from theses"
+  default_prompt: "Use $dissertation2ppt to turn my thesis Word document into an 18-25 slide editable Chinese defense PPTX."
