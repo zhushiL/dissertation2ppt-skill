@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import re
 import sys
 import unicodedata
 import zipfile
@@ -26,6 +27,20 @@ FORBIDDEN_SLIDE_TERMS = [
     "资料来源",
     "素材来源",
     "答辩提纲",
+    "答辩逻辑",
+    "归纳出的答辩主线",
+    "答辩主线",
+    "答辩人的思考",
+    "注意事项",
+    "注意的点",
+    "内部思考",
+    "生成思路",
+    "页面规划",
+    "可能被问到",
+    "备用回答",
+    "讲稿",
+    "演讲稿",
+    "speaker notes",
     "生成说明",
     "AI生成",
     "来自论文原文",
@@ -78,6 +93,60 @@ def shape_bounds(sp_tree: ET.Element) -> list[tuple[int, int, int, int, str]]:
             continue
         bounds.append((x, y, cx, cy, tag))
     return bounds
+
+
+def shape_text_items(root: ET.Element) -> list[dict]:
+    items: list[dict] = []
+    for elem in root.iter():
+        if local_name(elem.tag) not in {"sp", "graphicFrame"}:
+            continue
+        texts = [t.text for t in elem.findall(f".//{A}t") if t.text]
+        text = "".join(texts).strip()
+        if not text:
+            continue
+
+        xfrm = elem.find(f".//{A}xfrm")
+        if xfrm is None:
+            continue
+        off = xfrm.find(f"{A}off")
+        ext = xfrm.find(f"{A}ext")
+        if off is None or ext is None:
+            continue
+        try:
+            x = int(off.attrib.get("x", "0"))
+            y = int(off.attrib.get("y", "0"))
+            cx = int(ext.attrib.get("cx", "0"))
+            cy = int(ext.attrib.get("cy", "0"))
+        except ValueError:
+            continue
+
+        alignments: list[str] = []
+        for para in elem.findall(f".//{A}p"):
+            para_text = "".join(t.text or "" for t in para.findall(f".//{A}t")).strip()
+            if not para_text:
+                continue
+            ppr = para.find(f"{A}pPr")
+            alignments.append(ppr.attrib.get("algn", "default") if ppr is not None else "default")
+
+        items.append(
+            {
+                "name": text_box_name(elem),
+                "text": text,
+                "x": x,
+                "y": y,
+                "cx": cx,
+                "cy": cy,
+                "alignments": alignments or ["default"],
+            }
+        )
+    return items
+
+
+def normalize_heading_number(value: str) -> str:
+    stripped = value.strip().rstrip(".、")
+    if stripped.isdigit():
+        return str(int(stripped))
+    return stripped
 
 
 def solid_rgb(elem: ET.Element) -> str | None:
@@ -141,6 +210,104 @@ def text_box_name(elem: ET.Element) -> str:
         if local_name(child.tag) == "cNvPr":
             return child.attrib.get("name") or child.attrib.get("id") or local_name(elem.tag)
     return local_name(elem.tag)
+
+
+def cover_alignment_issues(root: ET.Element, slide_w: int | None, slide_h: int | None) -> list[dict]:
+    if not slide_w or not slide_h:
+        return []
+    issues: list[dict] = []
+    for item in shape_text_items(root):
+        text = item["text"]
+        if len(text) < 2:
+            continue
+        if item["y"] > slide_h * 0.9:
+            continue
+        if item["cx"] < slide_w * 0.12:
+            continue
+        # Cover titles and metadata may sit in centered boxes while paragraphs
+        # silently default to left alignment. That is the regression to catch.
+        if any(algn != "ctr" for algn in item["alignments"]):
+            issues.append(
+                {
+                    "shape": item["name"],
+                    "text_sample": text[:40],
+                    "alignments": item["alignments"],
+                }
+            )
+    return issues
+
+
+def duplicate_header_number_issues(root: ET.Element, slide_w: int | None, slide_h: int | None) -> list[dict]:
+    if not slide_w or not slide_h:
+        return []
+    top_items = [
+        item
+        for item in shape_text_items(root)
+        if item["y"] < slide_h * 0.22 and item["x"] < slide_w * 0.86 and len(item["text"]) <= 80
+    ]
+    number_badges: list[tuple[str, dict]] = []
+    numbered_titles: list[tuple[str, dict]] = []
+    for item in top_items:
+        text = item["text"].strip()
+        badge_match = re.fullmatch(r"([0-9]{1,2}|[一二三四五六七八九十]{1,3})[.、]?", text)
+        if badge_match:
+            number_badges.append((normalize_heading_number(badge_match.group(1)), item))
+            continue
+        title_match = re.match(r"^([0-9]{1,2}|[一二三四五六七八九十]{1,3})[\s.、]+", text)
+        if title_match:
+            numbered_titles.append((normalize_heading_number(title_match.group(1)), item))
+
+    issues: list[dict] = []
+    for badge_number, badge in number_badges:
+        for title_number, title in numbered_titles:
+            if badge_number == title_number and badge is not title:
+                issues.append(
+                    {
+                        "number": badge_number,
+                        "badge_shape": badge["name"],
+                        "title_shape": title["name"],
+                        "title_sample": title["text"][:60],
+                    }
+                )
+    return issues
+
+
+def navigation_like_candidates(root: ET.Element, slide_w: int | None, slide_h: int | None) -> list[dict]:
+    if not slide_w or not slide_h:
+        return []
+    candidates: list[dict] = []
+    standalone_number_items: list[tuple[str, dict]] = []
+    for item in shape_text_items(root):
+        in_nav_zone = item["y"] > slide_h * 0.66 or item["x"] < slide_w * 0.16
+        if not in_nav_zone:
+            continue
+        exact_number = re.fullmatch(r"0?[1-9]", item["text"].strip())
+        if exact_number:
+            standalone_number_items.append((normalize_heading_number(exact_number.group(0)), item))
+            continue
+        tokens = [normalize_heading_number(t) for t in re.findall(r"(?<!\d)0?[1-9](?!\d)", item["text"])]
+        unique_tokens = sorted(set(tokens), key=lambda value: int(value) if value.isdigit() else 99)
+        nav_text_only = re.fullmatch(r"[\s0-9./|·-]+", item["text"].strip()) is not None
+        if len(unique_tokens) >= 3 and len(item["text"]) <= 40 and nav_text_only:
+            candidates.append(
+                {
+                    "shape": item["name"],
+                    "text_sample": item["text"][:80],
+                    "tokens": unique_tokens,
+                    "zone": "bottom" if item["y"] > slide_h * 0.66 else "left",
+                }
+            )
+    unique_standalone = sorted(set(number for number, _item in standalone_number_items), key=int)
+    if len(unique_standalone) >= 3:
+        candidates.append(
+            {
+                "shape": "multiple standalone number shapes",
+                "text_sample": " ".join(unique_standalone),
+                "tokens": unique_standalone,
+                "zone": "bottom/left",
+            }
+        )
+    return candidates
 
 
 def text_overflow_candidates(root: ET.Element) -> list[dict]:
@@ -207,6 +374,7 @@ def analyze_slide(zf: zipfile.ZipFile, slide_name: str, slide_w: int | None, sli
     if root is None:
         return {"slide": slide_name, "error": "missing"}
 
+    slide_number = int(Path(slide_name).stem.replace("slide", ""))
     texts = [t.text.strip() for t in root.findall(f".//{A}t") if t.text and t.text.strip()]
     pictures = root.findall(f".//{PML}pic")
     graphic_frames = root.findall(f".//{PML}graphicFrame")
@@ -214,12 +382,18 @@ def analyze_slide(zf: zipfile.ZipFile, slide_name: str, slide_w: int | None, sli
 
     full_slide_pictures = 0
     bottom_blank_ratio = None
+    content_picture_area_ratios: list[float] = []
     if slide_w and slide_h:
         slide_area = slide_w * slide_h
         meaningful_bottoms: list[int] = []
         for x, y, cx, cy, tag in bounds:
             if tag == "pic" and slide_area and (cx * cy / slide_area) >= 0.88:
                 full_slide_pictures += 1
+            if tag == "pic" and slide_area:
+                area_ratio = cx * cy / slide_area
+                likely_logo = x > slide_w * 0.78 and y < slide_h * 0.18 and area_ratio < 0.04
+                if not likely_logo:
+                    content_picture_area_ratios.append(area_ratio)
             if slide_area and (cx * cy / slide_area) >= 0.003:
                 meaningful_bottoms.append(y + cy)
         if meaningful_bottoms:
@@ -233,16 +407,21 @@ def analyze_slide(zf: zipfile.ZipFile, slide_name: str, slide_w: int | None, sli
     forbidden_terms = [term for term in FORBIDDEN_SLIDE_TERMS if term in joined_text]
     return {
         "slide": slide_name,
+        "slide_number": slide_number,
         "text_runs": len(texts),
         "text_chars": text_chars,
         "pictures": len(pictures),
         "graphic_frames": len(graphic_frames),
         "full_slide_picture_candidates": full_slide_pictures,
         "bottom_blank_ratio": bottom_blank_ratio,
+        "max_content_picture_area_ratio": max(content_picture_area_ratios) if content_picture_area_ratios else None,
         "background_rgb": bg_rgb,
         "full_slide_background_risks": nonwhite_full_slide,
         "text_overflow_candidates": overflow_candidates,
         "forbidden_slide_terms": forbidden_terms,
+        "cover_alignment_issues": cover_alignment_issues(root, slide_w, slide_h) if slide_number == 1 else [],
+        "duplicate_header_number_issues": duplicate_header_number_issues(root, slide_w, slide_h) if slide_number > 1 else [],
+        "navigation_like_candidates": navigation_like_candidates(root, slide_w, slide_h) if slide_number > 2 else [],
     }
 
 
@@ -361,6 +540,54 @@ def main() -> int:
         warnings.append(
             f"{len(forbidden_term_slides)} slide(s) contain internal/audit terms such as source labels "
             "or '答辩提纲'; remove them from expert-facing slides."
+        )
+
+    cover_alignment = [
+        r["slide"]
+        for r in slide_reports
+        if r.get("cover_alignment_issues")
+    ]
+    if cover_alignment:
+        warnings.append(
+            "Cover slide has text boxes whose paragraph alignment is not centered; "
+            "center the text inside title and metadata boxes, not only the boxes themselves."
+        )
+
+    duplicate_header_numbers = [
+        r["slide"]
+        for r in slide_reports
+        if r.get("duplicate_header_number_issues")
+    ]
+    if duplicate_header_numbers:
+        warnings.append(
+            f"{len(duplicate_header_numbers)} slide(s) appear to repeat the same chapter number in the header; "
+            "use either a number badge or a numbered title, not both."
+        )
+
+    navigation_like_slides = [
+        r["slide"]
+        for r in slide_reports
+        if r.get("navigation_like_candidates")
+    ]
+    if navigation_like_slides:
+        warnings.append(
+            f"{len(navigation_like_slides)} slide(s) contain bottom/side multi-number patterns that look like "
+            "chapter navigation; remove persistent chapter navigation from the deck."
+        )
+
+    small_evidence_image_slides = [
+        r["slide"]
+        for r in slide_reports
+        if r.get("slide_number", 0) > 1
+        and r.get("pictures", 0) > 0
+        and r.get("text_chars", 0) >= 20
+        and r.get("max_content_picture_area_ratio") is not None
+        and r.get("max_content_picture_area_ratio", 1.0) < 0.12
+    ]
+    if small_evidence_image_slides:
+        warnings.append(
+            f"{len(small_evidence_image_slides)} slide(s) have only small content images; "
+            "key thesis figures and visual comparisons should be enlarged or placed in a stronger layout."
         )
 
     report = {

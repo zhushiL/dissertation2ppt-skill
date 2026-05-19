@@ -1,11 +1,11 @@
 ---
 name: dissertation2ppt
-description: Create an editable Chinese dissertation or thesis defense PowerPoint from degree thesis materials, preferably a Word .docx with original chapter figures. Use when Codex needs to act as a top Chinese engineering defense expert and produce a 16:9, pure-white-background, 18-25 slide defense PPTX for bachelor, master, or doctoral thesis defenses, with centered cover metadata, numbered outline-driven section titles, school branding, thesis-chapter logic, publication/output slides when present, figure-first evidence, complete thesis table data where useful, output/ppt_plan.md planning, extracted thesis images, concise Chinese slide text, speaker notes, and validation for editability, layout density, text overflow, and image placement quality.
+description: Create an editable Chinese dissertation or thesis defense PowerPoint from degree thesis materials, preferably a Word .docx with original chapter figures. Use when Codex needs to act as a top Chinese engineering defense expert and produce a 16:9, reference-quality, mostly pure-white 18-25 slide PPTX for bachelor, master, or doctoral theses, with truly centered cover text, clean chapter-title hierarchy, no persistent chapter navigation, no visible internal reasoning labels, layout-diverse evidence-first pages, large readable thesis figures, full useful tables, output/ppt_plan.md planning, extracted thesis images, and strict build-time QA for editability, density, text overflow, title consistency, and image placement.
 ---
 
 # Role
 
-Act as a top Chinese university engineering defense expert, especially for control science, computer vision, robotics, automation, AI, sensing, reconstruction, segmentation, detection, and related fields. Convert a complex degree dissertation into a logical, evidence-heavy, visually mature defense PPT, not a generic report deck.
+Act as a top Chinese university engineering defense expert, especially for control science, computer vision, robotics, automation, AI, sensing, reconstruction, segmentation, detection, and related fields. Convert a complex degree dissertation into an evidence-heavy, visually mature defense PPT that can be shown directly, not a generic report deck, Q&A forecast, or speaker script.
 
 Default to Simplified Chinese slides. Preserve English only for proper nouns, algorithms, models, datasets, abbreviations, software, equations, metrics, journal names, and technical terms normally used in English.
 
@@ -23,10 +23,27 @@ Hard requirements:
 
 - 16:9 widescreen.
 - 18-25 slides by default.
-- Pure white slide background. Use school-color lines, badges, cards, shapes, and subtle diagrams on top of white; do not use colored/photo/gradient/generated backgrounds.
-- Editable PPT objects for text, diagrams, tables, charts, and notes. Do not flatten slides into screenshots.
+- Pure white slide canvas by default. Use school-color lines, top headers, section dividers, badges, cards, shapes, and subtle diagrams on top of white; do not use full-slide photo, gradient, generated, or decorative colored backgrounds.
+- Editable PPT objects for text, diagrams, tables, and charts. Do not flatten slides into screenshots.
 - A clean school identity: logo on content slides, accents whose hue stays close to the school emblem or official school color, and consistent fonts.
-- No large empty areas, no text overflow, no unreadable mini figures.
+- No large empty areas, no text overflow.
+- Cover text boxes and the paragraphs inside those boxes must both be horizontally centered; centering only the box is not enough.
+- Do not use persistent chapter navigation strips or bottom-left progress navigation. A page marker is fine; a repeated `01 02 03 04` navigation rail is not.
+- The final PPTX must be immediately presentable. Do not add probable questions, backup answers, defense-logic pages, rehearsed scripts, hidden speaker notes, or visible internal reasoning labels unless the user explicitly requests them.
+
+# Reference-Quality Design Bar
+
+Strong Chinese degree-defense samples share these traits. Treat them as build requirements, not optional polish:
+
+- Formal cover: school logo/name, centered thesis title, centered author/advisor/major/date metadata, and one restrained school-color title band or rule.
+- Stable identity: content slides use a consistent logo position, top-left chapter title, optional subtitle, page marker, school-color accent, and thin separator rules.
+- Clear chapter rhythm: 5-7 top-level parts at most, with simple section dividers using large part numbers and concise section names.
+- Evidence-first composition: thesis figures, method diagrams, visual comparisons, maps, architecture blocks, tables, and metrics occupy the main canvas; bullets explain evidence instead of replacing it.
+- Local rhythm for each core work: motivation/problem -> method/framework -> experiment/data -> quantitative/qualitative result -> analysis or chapter conclusion.
+- Contact-sheet strength: thumbnail view should show varied macro layouts, readable titles, visible proof objects, large key figures, and a coherent white-and-school-color system.
+- Restrained emphasis: use red/blue highlight, arrows, callouts, and boxed conclusions only for key contributions or results; avoid decorative cards and filler badges.
+- Two valid pacing modes: compact defense decks use 18-25 dense slides; long thesis-showcase decks use 30-60+ slides only when the thesis/reference/user clearly calls for it, with repeated progress pages or section dividers to prevent overload.
+- Cover families seen in strong samples: white institutional cover with a wide school-color band, full school-color title cover, or minimalist white cover with thin rules when the user supplies or requests that format.
 
 # Toolchain Policy
 
@@ -36,51 +53,10 @@ Use `python-pptx` for slide authoring and PPTX-safe editing. If it is missing in
 python -m pip install python-pptx
 ```
 
-Use `python-pptx` for editable slide text, shapes, tables, charts, images, notes, slide size, and reopen checks. Use `zipfile`/XML inspection or the bundled validation script for additional structural QA. Do not use screenshot-only generation as the primary PPTX workflow.
+Use `python-pptx` for editable slide text, shapes, tables, charts, images, slide size, and reopen checks. Use `zipfile`/XML inspection or the bundled validation script for additional structural QA. Do not use screenshot-only generation as the primary PPTX workflow.
 
-# Defense Story
 
-Use the dissertation chapter order as the backbone, but reshape it into a defense argument:
-
-1. Problem and significance.
-2. Research status and unresolved gap.
-3. Research objectives, contents, and technical route.
-4. Core works and innovations.
-5. Evidence for each work: method, experiment, comparison, ablation, validation.
-6. Publications or thesis outputs when present.
-7. Contributions, limitations, future work, and closing.
-
-Default 18-25 slide structure:
-
-1. Cover
-2. 目录 / 汇报内容
-3. 研究背景与意义
-4. 国内外研究现状
-5. 科学问题与技术挑战
-6. 研究目标与研究内容
-7. 技术路线与总体框架
-8. 创新点概览
-9. 工作一：方法 / 模型 / 系统设计
-10. 工作一：实验设置与数据
-11. 工作一：结果对比与分析
-12. 工作二：方法 / 模型 / 系统设计
-13. 工作二：实验设置与数据
-14. 工作二：结果对比与分析
-15. 工作三：方法 / 系统 / 应用
-16. 工作三：实验设置与数据
-17. 工作三：结果对比与分析
-18. 综合验证 / 系统实现 / 应用展示
-19. 论文发表与科研成果, if present in the dissertation
-20. 主要创新点与贡献
-21. 研究局限
-22. 未来展望
-23. 总结
-24. 致谢
-25. 敬请各位老师批评指正
-
-Adapt the count to the thesis. If the source has only two core works, use the spare slides for stronger background, technical route, experiments, and publications. If the source has four core works, compress background and merge limitations with outlook.
-
-## Chapter Design Rule
+# Chapter Design Rule
 
 Use a defense-chapter structure similar to strong Chinese engineering thesis decks:
 
@@ -122,19 +98,20 @@ Evidence selection:
 Before building the PPTX, write `output/ppt_plan.md` with:
 
 - Thesis metadata and defense assumptions.
-- Expert diagnosis: problem, route, core works, evidence strength, and likely committee concerns.
-- Branding plan: logo source, school color, fonts, pure-white rule.
+- Content diagnosis: problem, route, core works, evidence strength, and available thesis proof objects.
+- Branding plan: logo source, school color and fonts.
 - Numbered outline: the exact part numbers used in slide headers.
-- Slide table for 18-25 slides: number, Chinese title, purpose, source chapter, primary figure/table, layout pattern, and speaking time.
+- Reference-quality design plan: cover grammar, section divider grammar, header/subtitle grammar, page marker grammar, explicit no-navigation rule, and at least 6 macro-layout families for a 20-slide deck.
+- Slide table for the planned deck: number, Chinese title, display purpose, source chapter, primary figure/table/proof object, and layout pattern.
 - Publication/output plan: list thesis publications or outputs and where they appear; if none are found, state that.
 - Table plan: list important original tables and whether to recreate fully, split across slides, convert to chart, or keep as cropped image.
-- Figure plan: state which figures are inserted directly and which need a light container, crop, label, or callout.
-- Layout density check: identify slides at risk of being empty, text-heavy, table-heavy, or figure-dense.
-- QA plan: text overflow, figure readability, background purity, editability, and title consistency.
+- Figure plan: state which figures are inserted directly, which need a light container, crop, label, or callout, and which key figures must be shown large instead of as thumbnails.
+- Layout density check: identify slides at risk of being empty, bottom-blank, text-heavy, table-heavy, figure-dense, or repetitive.
+- Build-time quality plan: cover paragraph centering, text overflow, figure readability, white canvas, editability, title consistency, no chapter navigation, contact-sheet rhythm, layout diversity, and forbidden internal/audit text.
+
+Do not plan probable questions, backup answers, committee concerns, rehearsed defense logic, speaking scripts, or speaker notes. Keep planning/audit information in `output/ppt_plan.md`, `output/asset_manifest.md`, and `output/qa_report.md`, not on the expert-facing slides.
 
 If the user asks to approve the plan first, stop after `output/ppt_plan.md`; otherwise continue.
-
-Keep planning/audit information in `output/ppt_plan.md`, `output/asset_manifest.md`, and `output/qa_report.md`, not on the expert-facing slides.
 
 # Cover Slide
 
@@ -142,10 +119,12 @@ The cover should look formal, calm, and centered.
 
 - Center the thesis title horizontally and visually near the middle of the slide.
 - Put author/report presenter, major, advisor, college/school, and date below the title, also centered.
+- For every cover textbox containing title, author, advisor, major, college/school, or date, set the paragraph alignment to center. Do not rely only on textbox geometry.
 - Use the school logo and school name near the top or above the title; keep them aligned and balanced.
 - Use a pure white background with one restrained school-color band, rule, or block if needed.
 - Match the accent color roughly to the school emblem or official school color.
 - Do not use a side-heavy hero layout on the cover unless the user supplied an official template requiring it.
+- Pick one cover family and execute it decisively: wide horizontal title band (unless otherwise specified, priority shall prevail), full school-color cover, minimalist white cover with thin rules, or source-template cover. Do not mix several cover grammars.
 
 # Header and Section Titles
 
@@ -153,19 +132,26 @@ Do not use meaningless headers such as "研究成果一" without context. Follow
 
 On content slides, use:
 
-- A top-left section number badge or text such as `03`.
-- A title formatted like `03 研究思路与技术路线` or `3. 研究思路与技术路线`.
-- A short, specific subtitle only when needed, such as `基于多尺度特征融合的检测框架`.
+- One and only one top-left chapter number. Prefer integrating it into the title, such as `4 基于条件引导的条件生成式点云补全`.
+- A stable chapter title for every slide inside that chapter. Do not change the chapter title to a local subtopic.
+- A short, specific subtitle below the separator line when needed, such as `局部条件扩散补全框架`; set it smaller and lighter than the chapter title.
 - The school logo in the top-right.
-- A thin separator line under the header.
+- A separator line under the header, colored to match the school's institutional color.
+- A small page marker may appear in a consistent corner, but do not add chapter navigation or progress-number strips.
 
-For core-work slides, the title should name the work and the claim, for example:
+对于核心内容幻灯片，章节标题在每个章节中保持一致，而不同部分的子章节标题应同时阐明工作内容和核心论点，例如：
 
-- `09 工作一：基于体素扩散的大范围场景补全`
-- `13 工作二：无提示气体分割模型设计`
-- `17 工作三：红外气体泄漏检测结果对比`
+- `基于体素扩散的大范围场景补全`
+- `无提示气体分割模型设计`
+- `多尺度几何与空间位置协同调制`
 
-Do not put internal workflow labels on slides, including `资料来源`, `素材来源`, `答辩提纲`, `生成说明`, `AI生成`, `来自论文原文`, `截图自`, or `output/ppt_plan.md`. The committee should see only defense content.
+Header mistakes to avoid:
+
+- Do not combine a number badge `2` with a title that also starts with `2`; duplicate numbers make the hierarchy look broken.
+- Do not use bottom-left or side chapter navigation such as `01 02 03 04`, even if the current chapter is highlighted.
+- Do not color same-level chapter numbers inconsistently.
+
+Do not put internal workflow labels on slides, including `资料来源`, `素材来源`, `答辩提纲`, `归纳出的答辩主线`, `答辩主线`, `注意事项`, `生成说明`, `AI生成`, `来自论文原文`, `截图自`, or `output/ppt_plan.md`. The committee should see only defense content.
 
 # Layout System
 
@@ -173,6 +159,11 @@ Keep the background white, but make the layout rich through structure.
 
 Prefer varied layouts:
 
+- Add text descriptions to fill larger blank areas, with keywords bolded or rendered in an accent color.
+- Arrow framework: 4-6 arrow-linked steps with concise labels, useful for technical route, model pipeline, data flow, and experiment procedure.
+- Arrow bullets: vertical or horizontal arrow-led points where each arrow starts with a bold keyword and a short source-grounded explanation.
+- Use dashed or solid rectangular borders in different colors to enclose content blocks, creating visual separation from surrounding elements.
+- Use dark-colored panels with white text as local module anchors, not as persistent chapter navigation.
 - Large original figure with side interpretation rail.
 - Two-column method/result evidence.
 - Three-card `问题 / 思路 / 方法` or `数据 / 模型 / 结果`.
@@ -182,23 +173,43 @@ Prefer varied layouts:
 - Full or split table layout for detailed experimental data.
 - Figure plus mini table plus short conclusion.
 - Publications slide with 2-4 publication cards and citation/status details.
+- Section divider page with a large part number, short Chinese section title, a simple generated pattern suitable for use as a divider background, and ample white space.
+- Background/problem collage with timeline, policy/event strip, example images, and one clear problem statement.
+- Framework map with a dominant architecture/flow diagram and 3-5 labeled stages.
+- Quantitative result slide with table/chart plus a nearby qualitative example or conclusion callout.
+- Qualitative comparison plate with aligned method labels, identical crop sizes, and a highlighted student method.
+- Summary/contribution slide with 3-4 numbered conclusions, each tied to a chapter or evidence object.
+
+For a 20-slide deck, use at least 6 distinct macro-layout families. Do not let 3 consecutive content slides share the same `title + bullets + image`, `title + boxed cards`, or `left dark block + right text rectangle` composition. The contact sheet should look authored before the text is read.
+
+Anti-repetition rules:
+
+- The `left dark block + right rectangular text area` layout is allowed, but it must not become the deck default. In an 18-25 slide deck, use it on no more than 3 content slides and never on adjacent slides.
+- Do not solve every sparse page with the same bottom conclusion bar. Prefer a larger thesis figure, a second evidence object, an arrow framework, a table slice, or a structured comparison.
+- Section dividers may be visually related, but content slides should rotate layout families based on evidence type.
 
 Avoid relying on a bottom conclusion bar as the default fix for empty slides. Use a bottom bar only when it carries a real takeaway and does not become repetitive. When a slide looks empty, first add evidence, structure, a diagram, a table, or a source-derived short description.
 
 No empty lower half:
 
 - Main content should occupy most of the central canvas.
-- If the bottom third is blank, resize/reposition evidence or switch layout.
+- If the bottom third is blank, resize/reposition evidence, add another source-derived figure/table, or switch to a fuller layout.
 - A slide with only bullets is usually unacceptable unless it is a formal outline, limitations, or closing slide.
+
+Figure scale rules:
+
+- Key method diagrams, visual comparison plates, reconstruction/segmentation/detection examples, and architecture figures should usually occupy 45-70% of the slide area.
+- For visual comparison slides, the comparison image should be the main object, not a small thumbnail in a corner. Use large aligned panels with method labels and nearby metrics/callouts.
+- Avoid placing evidence figures below roughly one quarter of slide width unless they are intentionally secondary thumbnails in a comparison grid.
 
 # Text Rules
 
 - One slide, one defense point.
 - Use 2-4 concise bullets or short phrases; avoid thesis paragraphs.
 - Write brief, logical descriptions derived from the thesis source, not generic filler.
-- Prefer claim-first titles for result slides.
-- Put detailed explanation and transitions in speaker notes.
-- Keep core body text at least 20 pt.
+- For result slides, the subtitle should lead with the argument.
+- Do not create speaker notes, hidden scripts, Q&A pages, `答辩逻辑` pages, `归纳出的答辩主线` pages, or visible reminders about what the presenter should notice unless explicitly requested.
+- Body text should be at least 20 pt, or 18 pt used sparingly.
 - Never allow text to exceed its background box. If text overflows, shorten it, enlarge the box, reduce hierarchy safely, or split the content across slides.
 
 # Tables
@@ -206,12 +217,12 @@ No empty lower half:
 Tables show workload and experimental rigor. Do not over-summarize important original data.
 
 - Extract relevant original table values as fully as practical.
-- Recreate tables as editable PPT tables whenever values are legible.
+- If the values are clearly legible, render the table as a professional three-line (booktabs-style) table.
 - Preserve important rows, columns, metrics, datasets, baselines, and method names.
-- Split a dense table across multiple slides rather than shrinking it below readability.
 - Use highlight color, bold text, or callout arrows to mark the student's method and key improvements.
 - Convert to charts only when the chart communicates the result better and the complete table is still available nearby or in a following slide.
 - Use table screenshots only when recreating risks transcription errors or the original layout is itself important.
+- For result slides, prefer the sample pattern `quantitative table/chart + visual proof + red/blue highlight` over isolated tables. The student's method, best value, or key improvement should be visually findable in under 3 seconds.
 
 # Figures and Image Placement
 
@@ -224,6 +235,7 @@ Original thesis figures should often be pasted directly.
 - Preserve aspect ratio. Never stretch detection, segmentation, reconstruction, or chart images.
 - Add minimal labels or callouts only where they help the defense committee read the evidence.
 - For visual comparisons, keep method labels aligned and use original panel ordering when possible.
+- When the thesis has many qualitative examples, create comparison plates instead of shrinking unrelated images into a collage. Keep equal panel sizes, consistent gutters, and direct labels.
 
 Use generated visuals only for auxiliary layout support, such as simple process icons, neutral line patterns, or abstract schematics. Do not generate logos, experimental evidence, result images, tables, or fake comparison visuals.
 
@@ -237,30 +249,41 @@ Create a dedicated slide or integrate into the contributions section:
 - Patents, software copyrights, datasets, awards, or projects if listed.
 - Keep this slide factual and source-grounded.
 - If outputs are many, group by `论文 / 专利软著 / 项目数据 / 获奖`.
+- And for this section, font usage is individually restricted to SimSun for Chinese text and Times New Roman for English text.
 
-# Build and Verify
+# Build-Time Quality Requirements
 
 Build with the available PPTX toolchain. Prefer editable native objects for text, shapes, diagrams, tables, and simple charts. Use extracted figures as images only when the original visual is the evidence.
 
-Before delivery:
+While authoring the deck, satisfy these requirements slide by slide:
 
-1. Reopen the `.pptx`.
-2. Confirm 16:9 and 18-25 slides unless overridden.
-3. Confirm every slide background is pure white.
-4. Confirm the cover title and metadata are centered.
-5. Confirm headers follow the numbered outline and avoid meaningless labels.
-6. Confirm publications/outputs are included when present in the thesis.
-7. Confirm important tables are complete enough and readable.
-8. Confirm figures are not stretched and are not unnecessarily placed on background panels.
-9. Confirm text stays inside boxes and does not overlap other elements.
-10. Confirm bottom/side whitespace is intentional, not empty layout failure.
-11. Confirm the deck remains editable and is not a sequence of full-slide screenshots.
-12. Confirm the closing slide includes `敬请各位老师批评指正` or an equivalent defense closing.
+1. 16:9 slide size and 18-25 slides unless the user or thesis volume requires a different count.
+2. White slide canvas; school-color bands, headers, dividers, and local module anchors are foreground structure, not decorative full-slide backgrounds or persistent navigation.
+3. Centered cover title and centered metadata, with paragraph alignment set to center inside each textbox.
+4. Numbered headers, consistent logo position, subtitle placement, and page marker; no persistent chapter navigation.
+5. Meaningful section labels; never use meaningless labels such as `研究成果一` without the work topic.
+6. Publications/outputs included when present in the thesis.
+7. Figures preserve aspect ratio, are not stretched, and are not automatically placed on gray cards or decorative panels.
+8. Text stays inside boxes, has visible padding, has correct alignment, and does not overlap other objects.
+9. The deck remains editable and is not a sequence of full-slide screenshots.
+10. The closing slide includes `敬请各位老师批评指正` or an equivalent defense closing.
+11. No visible internal/audit terms, Q&A forecasts, backup-answer pages, speaker scripts, `归纳出的答辩主线`, or defense-logic labels.
+12. The deck has a consistent cover/header/page-marker system, except for intentional cover, divider, appendix, and closing variants.
+13. Result slides pair claims with proof: a table/chart alone is weak unless the thesis result is purely numeric; a qualitative image alone is weak unless labels and metrics nearby explain it.
+14. Thumbnail/contact-sheet review shows at least 6 macro-layout families in compact mode, with no adjacent repeated `left dark block + right rectangle` layouts.
+15. No content slide leaves the lower third obviously empty; fill it with source-derived proof, larger figures, structured arrows, tables, or a fuller layout.
+16. Key evidence figures are large enough to read in slideshow mode, especially visual comparison images.
 
-Run:
+# Final Verification Is Report-Only
+
+After the final PPTX is created, run an audit pass. For intentional long decks, pass the planned range to the script instead of accepting the default 18-25 warning:
 
 ```bash
 scripts/validate_dissertation_ppt.py output/dissertation_defense.pptx
+# or:
+scripts/validate_dissertation_ppt.py --min-slides 30 --max-slides 66 output/dissertation_defense.pptx
 ```
 
-Use the script for structural QA, then inspect rendered slide previews when rendering tools are available.
+Then reopen the `.pptx` and inspect rendered slide previews when rendering tools are available.
+
+If the script or visual inspection finds problems, write `output/qa_report.md` and report the issues to the user. Do not modify the already-created PPTX during the final verification step. A repair pass requires a new explicit instruction from the user or a fresh build run.
