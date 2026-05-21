@@ -1,4 +1,4 @@
 interface:
   display_name: "Dissertation to Defense PPT"
-  short_description: "Create layout-diverse editable Chinese defense PPTX decks from theses"
-  default_prompt: "Use $dissertation2ppt to turn my thesis Word document into a directly presentable 18-25 slide editable Chinese defense PPTX with large evidence figures, clean chapter titles, and no internal planning text."
+  short_description: "Create claim-led, evidence-heavy editable Chinese defense PPTX decks from theses"
+  default_prompt: "Use $dissertation2ppt to turn my thesis Word document into a directly presentable 18-25 slide editable Chinese defense PPTX with a formal 目录 page, bottom-right page markers, claim-led outline, pre-planned full content-stage layouts, balanced thesis evidence figure hierarchy, varied macro-layouts, clean chapter titles, separate summary and closing pages, single-folder outputs, contact-sheet QA, and no internal planning text."

@@ -30,6 +30,7 @@ FORBIDDEN_SLIDE_TERMS = [
     "答辩逻辑",
     "归纳出的答辩主线",
     "答辩主线",
+    "答辩叙事",
     "答辩人的思考",
     "注意事项",
     "注意的点",
@@ -310,6 +311,129 @@ def navigation_like_candidates(root: ET.Element, slide_w: int | None, slide_h: i
     return candidates
 
 
+def agenda_title_issues(root: ET.Element, slide_number: int) -> list[dict]:
+    if slide_number != 2:
+        return []
+    items = shape_text_items(root)
+    joined = "".join(item["text"] for item in items)
+    if "汇报内容" in joined and "目录" not in joined:
+        return [{"text_sample": "汇报内容", "expected": "目录"}]
+    return []
+
+
+def page_marker_position_issues(root: ET.Element, slide_w: int | None, slide_h: int | None) -> list[dict]:
+    if not slide_w or not slide_h:
+        return []
+    issues: list[dict] = []
+    items = shape_text_items(root)
+
+    def is_bottom_right(item: dict) -> bool:
+        center_x = item["x"] + item["cx"] / 2
+        center_y = item["y"] + item["cy"] / 2
+        return center_x > slide_w * 0.70 and center_y > slide_h * 0.72
+
+    direct_markers = [
+        item
+        for item in items
+        if re.fullmatch(r"\s*\d{1,2}\s*/\s*\d{1,3}\s*", item["text"])
+    ]
+    for item in direct_markers:
+        if not is_bottom_right(item):
+            issues.append(
+                {
+                    "shape": item["name"],
+                    "text_sample": item["text"][:40],
+                    "x": item["x"],
+                    "y": item["y"],
+                    "expected": "bottom-right",
+                }
+            )
+
+    # Also catch split markers such as one top-right shape containing "04"
+    # and a neighboring shape containing "/25".
+    digit_items = [
+        item
+        for item in items
+        if re.fullmatch(r"\s*\d{1,2}\s*", item["text"])
+        and item["x"] > slide_w * 0.68
+    ]
+    slash_items = [
+        item
+        for item in items
+        if re.fullmatch(r"\s*/\s*\d{1,3}\s*", item["text"])
+        and item["x"] > slide_w * 0.68
+    ]
+    for digit in digit_items:
+        for slash in slash_items:
+            if abs((digit["y"] + digit["cy"] / 2) - (slash["y"] + slash["cy"] / 2)) > slide_h * 0.05:
+                continue
+            combined = {
+                "name": f"{digit['name']} + {slash['name']}",
+                "text": f"{digit['text']}{slash['text']}",
+                "x": min(digit["x"], slash["x"]),
+                "y": min(digit["y"], slash["y"]),
+                "cx": max(digit["x"] + digit["cx"], slash["x"] + slash["cx"]) - min(digit["x"], slash["x"]),
+                "cy": max(digit["y"] + digit["cy"], slash["y"] + slash["cy"]) - min(digit["y"], slash["y"]),
+            }
+            if not is_bottom_right(combined):
+                issues.append(
+                    {
+                        "shape": combined["name"],
+                        "text_sample": combined["text"][:40],
+                        "x": combined["x"],
+                        "y": combined["y"],
+                        "expected": "bottom-right",
+                    }
+                )
+    return issues
+
+
+def long_unwrapped_line_candidates(root: ET.Element) -> list[dict]:
+    candidates: list[dict] = []
+    for elem in root.iter():
+        if local_name(elem.tag) not in {"sp", "graphicFrame"}:
+            continue
+        xfrm = elem.find(f".//{A}xfrm")
+        if xfrm is None:
+            continue
+        ext = xfrm.find(f"{A}ext")
+        if ext is None:
+            continue
+        try:
+            width_pt = int(ext.attrib.get("cx", "0")) / EMU_PER_POINT
+        except ValueError:
+            continue
+        if width_pt <= 0:
+            continue
+
+        font_sizes: list[float] = []
+        for rpr in elem.findall(f".//{A}rPr") + elem.findall(f".//{A}defRPr") + elem.findall(f".//{A}endParaRPr"):
+            sz = rpr.attrib.get("sz")
+            if sz and sz.isdigit():
+                font_sizes.append(int(sz) / 100)
+        font_pt = max(font_sizes) if font_sizes else 20.0
+        usable_width = max(width_pt * 0.88, 1.0)
+
+        for para in elem.findall(f".//{A}p"):
+            para_text = "".join(t.text or "" for t in para.findall(f".//{A}t")).strip()
+            if len(para_text) < 28:
+                continue
+            if "\n" in para_text:
+                continue
+            para_width = text_width_units(para_text, font_pt)
+            if para_width > usable_width * 1.2:
+                candidates.append(
+                    {
+                        "shape": text_box_name(elem),
+                        "text_sample": para_text[:60],
+                        "font_pt": round(font_pt, 1),
+                        "box_width_pt": round(width_pt, 1),
+                        "estimated_line_width_pt": round(para_width, 1),
+                    }
+                )
+    return candidates
+
+
 def text_overflow_candidates(root: ET.Element) -> list[dict]:
     candidates: list[dict] = []
     for elem in root.iter():
@@ -383,6 +507,7 @@ def analyze_slide(zf: zipfile.ZipFile, slide_name: str, slide_w: int | None, sli
     full_slide_pictures = 0
     bottom_blank_ratio = None
     content_picture_area_ratios: list[float] = []
+    header_logo_area_ratios: list[float] = []
     if slide_w and slide_h:
         slide_area = slide_w * slide_h
         meaningful_bottoms: list[int] = []
@@ -392,6 +517,8 @@ def analyze_slide(zf: zipfile.ZipFile, slide_name: str, slide_w: int | None, sli
             if tag == "pic" and slide_area:
                 area_ratio = cx * cy / slide_area
                 likely_logo = x > slide_w * 0.78 and y < slide_h * 0.18 and area_ratio < 0.04
+                if likely_logo:
+                    header_logo_area_ratios.append(area_ratio)
                 if not likely_logo:
                     content_picture_area_ratios.append(area_ratio)
             if slide_area and (cx * cy / slide_area) >= 0.003:
@@ -404,6 +531,7 @@ def analyze_slide(zf: zipfile.ZipFile, slide_name: str, slide_w: int | None, sli
     bg_rgb = slide_background_rgb(root)
     nonwhite_full_slide = full_slide_nonwhite_shapes(root, slide_w, slide_h)
     overflow_candidates = text_overflow_candidates(root)
+    long_line_candidates = long_unwrapped_line_candidates(root)
     forbidden_terms = [term for term in FORBIDDEN_SLIDE_TERMS if term in joined_text]
     return {
         "slide": slide_name,
@@ -415,11 +543,16 @@ def analyze_slide(zf: zipfile.ZipFile, slide_name: str, slide_w: int | None, sli
         "full_slide_picture_candidates": full_slide_pictures,
         "bottom_blank_ratio": bottom_blank_ratio,
         "max_content_picture_area_ratio": max(content_picture_area_ratios) if content_picture_area_ratios else None,
+        "total_content_picture_area_ratio": sum(content_picture_area_ratios) if content_picture_area_ratios else None,
+        "header_logo_area_ratios": header_logo_area_ratios,
         "background_rgb": bg_rgb,
         "full_slide_background_risks": nonwhite_full_slide,
         "text_overflow_candidates": overflow_candidates,
+        "long_unwrapped_line_candidates": long_line_candidates,
         "forbidden_slide_terms": forbidden_terms,
         "cover_alignment_issues": cover_alignment_issues(root, slide_w, slide_h) if slide_number == 1 else [],
+        "agenda_title_issues": agenda_title_issues(root, slide_number),
+        "page_marker_position_issues": page_marker_position_issues(root, slide_w, slide_h),
         "duplicate_header_number_issues": duplicate_header_number_issues(root, slide_w, slide_h) if slide_number > 1 else [],
         "navigation_like_candidates": navigation_like_candidates(root, slide_w, slide_h) if slide_number > 2 else [],
     }
@@ -513,6 +646,8 @@ def main() -> int:
         if r.get("bottom_blank_ratio") is not None
         and r.get("bottom_blank_ratio", 0) >= 0.28
         and r.get("text_chars", 0) >= 20
+        and r.get("slide_number", 0) not in {1, 2, slide_count}
+        and r.get("text_chars", 0) >= 90
     ]
     if lower_half_sparse:
         warnings.append(
@@ -539,7 +674,40 @@ def main() -> int:
     if forbidden_term_slides:
         warnings.append(
             f"{len(forbidden_term_slides)} slide(s) contain internal/audit terms such as source labels "
-            "or '答辩提纲'; remove them from expert-facing slides."
+            "or defense-production labels; remove them from expert-facing slides."
+        )
+
+    agenda_title_slides = [
+        r["slide"]
+        for r in slide_reports
+        if r.get("agenda_title_issues")
+    ]
+    if agenda_title_slides:
+        warnings.append(
+            "Slide 2 appears to use '汇报内容' without '目录'; Chinese dissertation defense decks "
+            "should normally title the agenda slide '目录' unless a template or school convention says otherwise."
+        )
+
+    page_marker_position_slides = [
+        r["slide"]
+        for r in slide_reports
+        if r.get("page_marker_position_issues")
+    ]
+    if page_marker_position_slides:
+        warnings.append(
+            f"{len(page_marker_position_slides)} slide(s) have page markers outside the bottom-right zone; "
+            "keep page markers in one consistent bottom-right position unless following a provided template."
+        )
+
+    long_line_slides = [
+        r["slide"]
+        for r in slide_reports
+        if r.get("long_unwrapped_line_candidates")
+    ]
+    if long_line_slides:
+        warnings.append(
+            f"{len(long_line_slides)} slide(s) contain long unwrapped text lines; "
+            "enable wrapping, add manual line breaks, or convert the text into structured cards."
         )
 
     cover_alignment = [
@@ -579,15 +747,30 @@ def main() -> int:
         r["slide"]
         for r in slide_reports
         if r.get("slide_number", 0) > 1
+        and r.get("slide_number", 0) < slide_count
         and r.get("pictures", 0) > 0
         and r.get("text_chars", 0) >= 20
         and r.get("max_content_picture_area_ratio") is not None
         and r.get("max_content_picture_area_ratio", 1.0) < 0.12
+        and (r.get("total_content_picture_area_ratio") is None or r.get("total_content_picture_area_ratio", 0.0) < 0.18)
     ]
     if small_evidence_image_slides:
         warnings.append(
             f"{len(small_evidence_image_slides)} slide(s) have only small content images; "
             "key thesis figures and visual comparisons should be enlarged or placed in a stronger layout."
+        )
+
+    small_header_logo_slides = [
+        r["slide"]
+        for r in slide_reports
+        if r.get("slide_number", 0) > 1
+        and r.get("header_logo_area_ratios")
+        and max(r.get("header_logo_area_ratios", [0.0])) < 0.003
+    ]
+    if small_header_logo_slides:
+        warnings.append(
+            f"{len(small_header_logo_slides)} slide(s) have a very small top-right logo; "
+            "make the institutional mark recognizable and visually balanced in the header."
         )
 
     report = {
