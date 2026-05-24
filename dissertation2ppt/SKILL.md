@@ -1,6 +1,6 @@
 ---
 name: dissertation2ppt
-description: Create an editable Chinese dissertation or thesis defense PowerPoint from degree thesis materials, preferably a Word .docx with original chapter figures. Use when Codex needs to act as a top Chinese engineering defense expert and produce a 16:9, reference-quality 18-25 slide PPTX for bachelor, master, or doctoral theses, with truly centered cover text, a formal `目录` page, consistent bottom-right page markers, clean chapter hierarchy, no persistent chapter navigation, no visible internal reasoning labels, layout-diverse evidence-first pages, large readable thesis figures, full useful tables, a single organized output folder, template-aware design when the user supplies a PPT template, output/ppt_plan.md planning, extracted thesis images, and strict build-time QA for editability, density, text wrapping, overflow, title consistency, and image placement.
+description: Create an editable Chinese dissertation or thesis defense PowerPoint from degree thesis materials, preferably a Word .docx with original chapter figures. Use when Codex needs to act as a top Chinese engineering defense expert and produce a 16:9, reference-quality 18-25 slide PPTX for bachelor, master, or doctoral theses, with truly centered cover text, a formal `目录` page, adaptive section-divider pacing, consistent bottom-right page markers, clean chapter hierarchy, no persistent chapter navigation, no visible internal reasoning labels, layout-diverse evidence-first pages, large readable thesis figures, full useful tables, a single organized output folder, template-aware design when the user supplies a PPT template, output/ppt_plan.md planning, extracted thesis images, and strict build-time QA for editability, density, text wrapping, overflow, title consistency, and image placement.
 ---
 
 # Role
@@ -24,10 +24,11 @@ Keep generated artifacts together. Any build scripts, extracted text, intermedia
 Hard requirements:
 
 - 16:9 widescreen.
-- 18-25 slides by default.
+- 18-25 slides by default as a flexible compact-defense range. Choose the count that best fits the thesis rhythm anywhere within this range; do not pad to 25 slides just because 25 is the upper bound.
+- A formal `目录` slide is required. In the default 18-25 slide compact mode, standalone chapter/part divider slides are optional and may be omitted to preserve evidence density; use strong numbered headers and the `目录` to carry the chapter rhythm. Add systematic section divider pages when the user requests a longer deck, a more ceremonial thesis-showcase deck, or a slide count above the compact range.
 - Pure white slide canvas by default when no template is supplied. Use school-color lines, top headers, section dividers, badges, cards, shapes, and subtle diagrams on top of white; do not use full-slide photo, gradient, generated, or decorative colored backgrounds unless the user supplies a template whose design language clearly requires it.
 - Editable PPT objects for text, diagrams, tables, and charts. Do not flatten slides into screenshots.
-- A clean school identity: logo on content slides, accents whose hue stays close to the school emblem or official school color, and consistent fonts. The identity mark should be visually present and balanced with the header, not reduced to an unnoticeable corner token.
+- A clean school identity: logo on content slides, accents whose hue stays close to the school emblem or official school color, and consistent fonts. By default, all editable native text in the deck must use Microsoft YaHei / `微软雅黑` as the unified font, including Chinese text, English terms, numbers, page markers, labels, tables, diagrams, headers, cover metadata, closing text, and shape text. Do not default to PingFang, SimHei, Calibri, Arial, Aptos, DengXian, or theme fonts for normal slides. The only built-in exception is the publications/outputs section, whose font rule is defined separately below and must be preserved. The identity mark should be visually present and balanced with the header, not reduced to an unnoticeable corner token. If a verified school logo cannot be found in the thesis/source files or a user-supplied template, pause after source/logo discovery and ask the user to provide the official logo before continuing the PPT workflow.
 - No large empty areas, no text overflow.
 - Readable scale for defense rooms: on content slides, the top-left chapter title should be at least 24 pt, and normal audience-facing text should be at least 16 pt. Page markers, tiny logo text, and unavoidable labels embedded inside original thesis figures may be smaller, but they must not carry the slide's main argument.
 - Cover text boxes and the paragraphs inside those boxes must both be horizontally centered; centering only the box is not enough.
@@ -51,12 +52,12 @@ Strong Chinese degree-defense samples share these traits. Treat them as build re
 - Stable identity: content slides use a consistent logo position, prominent chapter title, clear subtitle or local claim, page marker, school-color accent, and thin separator rules. The header should look designed, not like plain text placed on a blank slide.
 - Strong content-stage use: after the header separator, the region below it is the main presentation stage. Substantive pages should make that region feel intentionally filled with evidence, interpretation, and structure, rather than leaving the proof object small in the upper half.
 - Content-stage fullness in strong samples usually comes from layout systems, not decoration: large proof objects, aligned side rails, lower-row metric strips, multi-panel evidence boards, boxed module maps, and connected flows that occupy the slide as one system. Avoid treating content fill as an after-the-fact patch with a generic bottom sentence.
-- Clear chapter rhythm: 5-7 top-level parts at most, with simple section dividers using large part numbers and concise section names.
+- Clear chapter rhythm: 5-7 top-level parts at most. Compact 18-25 slide decks may rely on the `目录` plus strong numbered headers instead of standalone dividers; longer thesis-showcase decks should use simple section dividers with large part numbers and concise section names.
 - Evidence-first composition: thesis figures, method diagrams, visual comparisons, maps, architecture blocks, tables, and metrics occupy the main canvas; bullets explain evidence instead of replacing it.
 - Local rhythm for each core work: motivation/problem -> method/framework -> experiment/data -> quantitative/qualitative result -> analysis or chapter conclusion.
 - Contact-sheet strength: thumbnail view should show varied macro layouts, readable titles, visible proof objects, large key figures, and a coherent white-and-school-color system.
 - Restrained emphasis: use red/blue highlight, arrows, callouts, and boxed conclusions only for key contributions or results; avoid decorative cards and filler badges.
-- Two valid pacing modes: compact defense decks use 18-25 dense slides; long thesis-showcase decks use 30-60+ slides only when the thesis/reference/user clearly calls for it, with repeated progress pages or section dividers to prevent overload.
+- Two valid pacing modes: compact defense decks use any well-paced count within 18-25 dense slides, not automatically 25; long thesis-showcase decks use 30-60+ slides only when the thesis/reference/user clearly calls for it, with repeated progress pages or section dividers to prevent overload.
 - Cover families seen in strong samples: white institutional cover with a wide school-color band, full school-color title cover, or minimalist white cover with thin rules when the user supplies or requests that format.
 
 # Toolchain Policy
@@ -92,16 +93,16 @@ Use a defense-chapter structure similar to strong Chinese engineering thesis dec
 - `目录`, never `答辩提纲`. For Chinese degree-defense decks, the second slide title should normally be `目录`; avoid `汇报内容` unless the user supplies a template or institution convention that uses that wording.
 - Part 01: `绪论` or `研究背景与意义`, including background, significance, research status, problem/gap, research content, innovation overview, and thesis chapter arrangement when useful.
 - Part 02: `相关理论与技术` or `理论基础与关键技术`, only when the thesis depends on technical foundations the committee must understand.
-- Part 03-04 or Part 03-05: core research works. Each major work should have its own section divider and then follow a local rhythm: data/problem -> method/framework -> quantitative experiment -> qualitative visualization -> ablation/robustness/analysis.
+- Part 03-04 or Part 03-05: core research works. In compact 18-25 slide mode, introduce each major work through the `目录`, numbered headers, and local claims rather than spending slides on every standalone divider. In longer decks or when the user asks for more pages, each major work should have its own section divider and then follow a local rhythm: data/problem -> method/framework -> quantitative experiment -> qualitative visualization -> ablation/robustness/analysis.
 - Part after core works: `总结与展望`, combining main conclusions, contributions, limitations, and future work.
 - Optional final academic output part: `攻读学位期间科研成果` or `论文发表与科研成果`, when publications, patents, software copyrights, datasets, awards, or projects appear in the dissertation.
 - Closing: acknowledgements and `敬请各位老师批评指正`.
 
-For an 18-25 slide deck, avoid too many tiny sections. Use 5-7 top-level parts at most. When core work is the thesis center, give each work 3-5 slides and compress theory/background. When the thesis is method-heavy, split each work into `框架/方法`, `实验设置`, `结果对比`, and `消融分析`.
+For an 18-25 slide deck, avoid too many tiny sections and treat 18-25 as a range, not a mandate to reach 25. Use the smallest complete count that preserves the defense story, usually 5-7 top-level parts at most. When core work is the thesis center, give each work 3-5 slides and compress theory/background. When the thesis is method-heavy, split each work into `框架/方法`, `实验设置`, `结果对比`, and `消融分析`.
 
 Treat `总结与展望` as a substantive section, not as a decorative closing gesture. It should normally have its own slide or slides with conclusions, contribution mapping, limitations, and future work. The final `敬请各位老师批评指正` closing slide should remain separate from the summary section. If the slide count is tight, compress background, theory, or repeated experiment pages before merging summary content into the closing page.
 
-Every standalone top-level part in the planned outline should have its own section divider or intentionally designed guide page. Do not let some numbered parts have guide pages while another numbered part begins abruptly on a normal content page unless the plan explicitly merges that part into a neighboring section for pacing reasons.
+Section-divider policy should match the slide budget. In default 18-25 slide compact mode, omit standalone dividers when they would crowd out substantive evidence, but make every transition legible through the `目录`, numbered headers, local claims, and consistent page markers. When the user requests a longer deck or a slide count beyond the compact range, every standalone top-level part should have its own section divider or intentionally designed guide page. Do not mix divider treatment accidentally; either omit them consistently for compact pacing or include them consistently for long-deck pacing unless the plan explicitly explains an exception.
 
 # Source Extraction
 
@@ -127,9 +128,10 @@ Evidence selection:
 
 Asset authenticity:
 
-- Use verified school logos, user-provided logos, or logos extracted from the thesis/source files. Do not redraw, approximate, stylize, or generate official logos.
+- Search the thesis/source files and any user-supplied template for the school logo first. Use only verified school logos, user-provided logos, or logos extracted from the thesis/source files. Do not redraw, approximate, stylize, or generate official logos.
+- If no verified school logo is found in the thesis/source files or template, stop after source/logo discovery and ask the user to provide the official school logo. Continue planning and production only after the user provides the logo or explicitly approves a logo-free fallback.
 - Record logo, screenshot, publication, dataset, and external visual provenance in `output/asset_manifest.md`.
-- If a verified identity asset cannot be obtained cleanly, rely on typography, school-color accents, and source-grounded content instead of inventing a pseudo-official mark.
+- If the user explicitly approves a logo-free fallback, rely on typography, school-color accents, and source-grounded content instead of inventing a pseudo-official mark, and record that decision in `output/asset_manifest.md`.
 
 # Required Plan
 
@@ -137,19 +139,19 @@ Before building the PPTX, write `output/ppt_plan.md` with:
 
 - Thesis metadata and defense assumptions.
 - Content diagnosis: problem, route, core works, evidence strength, and available thesis proof objects.
-- Branding plan: logo source, school color and fonts.
+- Branding plan: logo search result, logo source or user-provided-logo requirement, school color and fonts. The font plan must state that the default unified font for normal slides is Microsoft YaHei / `微软雅黑`, and must explicitly state the publications/outputs exception: SimSun for Chinese text and Times New Roman for English text.
 - Numbered outline: the exact part numbers used in slide headers.
-- Slide-budget plan: allocate pages to background, theory, each core work, summary, outputs if any, and the independent closing slide. State what is compressed if the 18-25 page range is tight; do not solve a tight count by fusing `总结与展望` with `敬请批评指正`.
+- Slide-budget plan: choose a justified slide count within the requested range, allocate pages to background, theory, each core work, summary, outputs if any, and the independent closing slide. State what is compressed if the 18-25 page range is tight; do not pad to 25 and do not solve a tight count by fusing `总结与展望` with `敬请批评指正`.
 - Claim spine: one-line overall arc plus slide-level claim, proof object, and support note for each substantive slide.
-- Design-system lock: background, type hierarchy, school-color usage, chart/table/diagram/container grammar, bottom-right page marker grammar or template-derived marker grammar, source/asset treatment, allowed layout families, and banned motifs.
-- Reference-quality design plan: cover grammar, section divider grammar, header/subtitle grammar, page marker grammar, explicit no-navigation rule, content-stage fill strategy below the header separator, readable type scale, and at least 6 macro-layout families for a 20-slide deck.
+- Design-system lock: background, type hierarchy, Microsoft YaHei / `微软雅黑` default font usage for all normal editable text, publications/outputs font exception, school-color usage, chart/table/diagram/container grammar, bottom-right page marker grammar or template-derived marker grammar, source/asset treatment, allowed layout families, and banned motifs.
+- Reference-quality design plan: cover grammar, section-divider policy for compact versus long decks, header/subtitle grammar, page marker grammar, explicit no-navigation rule, content-stage fill strategy below the header separator, readable type scale, and at least 6 macro-layout families for a 20-slide deck.
 - Slide table for the planned deck: number, Chinese title, display purpose, source chapter, primary figure/table/proof object, evidence hierarchy, and layout pattern.
 - Publication/output plan: list thesis publications or outputs and where they appear; if none are found, state that.
 - Table plan: list important original tables and whether to recreate fully, split across slides, convert to chart, or keep as cropped image.
 - Figure plan: state which figures are inserted directly, which need a light container, crop, label, or callout, which key figures must be shown large instead of as thumbnails, and how related or visually similar figures will be treated: equal-weight grid, main-and-inset, before/after pair, or split across slides.
 - Auxiliary visual plan: identify any topic-aligned generated or schematic patterns/icons used only to improve layout structure, and state how they stay separate from source-grounded evidence.
 - Contact-sheet plan and layout density check: identify slides at risk of being empty, bottom-blank, text-heavy, table-heavy, figure-dense, repetitive, under-scaled, too generic, or visually unbalanced because related figures have accidental size hierarchy.
-- Build-time quality plan: cover paragraph centering, text wrapping, text overflow, minimum readable font scale, figure readability, white canvas or template-justified canvas, editability, title consistency, bottom-right page-marker consistency, no chapter navigation, contact-sheet rhythm, layout diversity, balanced identity scale, section-divider coverage for every numbered part, adaptive subtitle placement, content-stage fill below the header separator, single-folder output organization, and forbidden internal/audit text.
+- Build-time quality plan: cover paragraph centering, text wrapping, text overflow, minimum readable font scale, figure readability, white canvas or template-justified canvas, editability, title consistency, bottom-right page-marker consistency, no chapter navigation, contact-sheet rhythm, layout diversity, balanced identity scale, compact-versus-long section-divider policy, adaptive subtitle placement, content-stage fill below the header separator, single-folder output organization, and forbidden internal/audit text.
 
 Do not plan probable questions, backup answers, committee concerns, rehearsed defense logic, speaking scripts, or speaker notes. Keep planning/audit information in `output/ppt_plan.md`, `output/asset_manifest.md`, and `output/qa_report.md`, not on the expert-facing slides.
 
@@ -338,18 +340,27 @@ Create a dedicated slide or integrate into the contributions section:
 - If outputs are many, group by `论文 / 专利软著 / 项目数据 / 获奖`.
 - And for this section, font usage is individually restricted to SimSun for Chinese text and Times New Roman for English text.
 
+# Font Policy
+
+For normal slides, the default font policy is strict: use Microsoft YaHei / `微软雅黑` for all editable native text. This includes cover title and metadata, `目录`, section or content headers, subtitles, body text, callouts, labels, metric cards, page markers, editable tables, editable charts, diagrams, connectors, captions, closing slides, and any text inside shapes.
+
+When using `python-pptx`, set the font family explicitly on every run and on East Asian font attributes where possible. Do not rely on PowerPoint theme fonts, default fonts, or local fallback behavior. Do not use PingFang / `苹方`, SimHei / `黑体`, DengXian / `等线`, Calibri, Arial, Aptos, or other fonts as the normal-slide default unless the user explicitly requests a different font or provides a template whose official typography must be followed.
+
+The publications/outputs section is the fixed exception to the default font policy: Chinese text in that section must use SimSun / `宋体`, and English text must use Times New Roman. Preserve this exception even when the rest of the deck uses Microsoft YaHei / `微软雅黑`.
+
 # Build-Time Quality Requirements
 
 Build with the available PPTX toolchain. Prefer editable native objects for text, shapes, diagrams, tables, and simple charts. Use extracted figures as images only when the original visual is the evidence.
 
 While authoring the deck, satisfy these requirements slide by slide:
 
-1. 16:9 slide size and 18-25 slides unless the user or thesis volume requires a different count.
+1. 16:9 slide size and a justified slide count within 18-25 by default unless the user or thesis volume requires a different count. Do not add filler slides merely to reach 25.
 2. White slide canvas unless a user-provided template justifies another coherent style; school-color bands, headers, dividers, and local module anchors are foreground structure, not decorative full-slide backgrounds or persistent navigation.
 3. Centered cover title and centered metadata, with paragraph alignment set to center inside each textbox.
 4. Numbered headers, consistent logo position, subtitle placement, top-left chapter titles at least 24 pt, and bottom-right page marker by default; no persistent chapter navigation.
-5. Meaningful section labels; never use meaningless labels such as `研究成果一` without the work topic. Every standalone numbered part has a matching divider/guide page unless the plan explicitly merges it with another part for pacing.
+5. Meaningful section labels; never use meaningless labels such as `研究成果一` without the work topic. In compact 18-25 slide decks, standalone dividers may be omitted consistently when the `目录`, headers, and local claims make transitions clear. In longer decks or user-requested expanded decks, every standalone numbered part has a matching divider/guide page unless the plan explicitly merges it with another part for pacing.
 6. Publications/outputs included when present in the thesis.
+6a. Except for the publications/outputs section, all editable native text uses Microsoft YaHei / `微软雅黑` explicitly rather than theme fonts or local defaults. The publications/outputs section keeps SimSun / `宋体` for Chinese text and Times New Roman for English text.
 7. Figures preserve aspect ratio, are not stretched, and are not automatically placed on gray cards or decorative panels.
 8. Text stays inside boxes, wraps inside the intended frame, has visible padding, has correct alignment, and does not overlap other objects. Normal audience-facing text should not drop below 16 pt; if it must, redesign the layout or split the slide.
 9. The deck remains editable and is not a sequence of full-slide screenshots.
@@ -363,10 +374,10 @@ While authoring the deck, satisfy these requirements slide by slide:
 17. Slide titles, subtitles, and callouts are source-specific; a title that could fit any thesis should be sharpened or moved to a divider.
 18. Charts, pipelines, matrices, arrows, and framework diagrams preserve correct geometry, attachment, reading order, and label association after export.
 19. Repeated visual systems such as step sequences, KPI/metric rails, chapter dividers, and comparison plates render every item with the full grammar: label, value or stage name, context, and adequate contrast.
-20. Official identity assets are verified or user-provided; no generated, redrawn, approximate, or pseudo-official school logos, partner marks, dataset logos, or product UI are used.
+20. Official identity assets are verified or user-provided; no generated, redrawn, approximate, or pseudo-official school logos, partner marks, dataset logos, or product UI are used. If the school logo is not found in the thesis/source files or template, pause after source/logo discovery and request it from the user before continuing planning or production unless the user explicitly approves a logo-free fallback.
 21. Official or user-provided logos used in headers are large enough to support the institutional identity without overpowering the content. If the identity mark is too small to recognize in a contact sheet, revise the header system.
 22. Subtitle placement is density-aware: it may sit in the header, below the separator line, or as a body claim/callout, but it must improve rhythm and readability rather than make the page cramped or sparse.
-23. After the first complete export, inspect the deck as a contact sheet and revise the weakest slides before calling the deck final unless final verification is intentionally report-only. Empty-looking content pages, underfilled below-header stages, unwrapped long lines, small chapter titles, body text under 16 pt, abrupt missing section dividers, inconsistent page markers, weak subtitles, uneven subtitle placement, and undersized header logos are repair candidates.
+23. After the first complete export, inspect the deck as a contact sheet and revise the weakest slides before calling the deck final unless final verification is intentionally report-only. Empty-looking content pages, underfilled below-header stages, unwrapped long lines, small chapter titles, body text under 16 pt, inconsistent transition treatment, inconsistent page markers, weak subtitles, uneven subtitle placement, and undersized header logos are repair candidates.
 24. All run-created artifacts should remain inside `output/` or the selected delivery folder. Do not leave `build_*.py`, extracted text dumps, validation JSON, preview images, or repair scratch files in the parent working directory unless the user explicitly asks for that layout.
 
 # QA Scorecard
