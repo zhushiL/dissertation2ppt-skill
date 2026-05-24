@@ -37,7 +37,6 @@ The default deck is:
 ├── README.md
 └── dissertation2ppt/
     ├── SKILL.md
-    ├── SKILL_zh.md
     ├── agents/
     │   └── openai.yaml
     └── scripts/
@@ -45,7 +44,6 @@ The default deck is:
 ```
 
 - `dissertation2ppt/SKILL.md`: canonical Codex skill definition.
-- `dissertation2ppt/SKILL_zh.md`: Chinese reading version kept for easier review.
 - `dissertation2ppt/agents/openai.yaml`: skill display metadata.
 - `dissertation2ppt/scripts/validate_dissertation_ppt.py`: standard-library PPTX structural validator.
 
